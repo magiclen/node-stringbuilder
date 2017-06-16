@@ -12,3 +12,12 @@ describe('#append', function() {
         expect(result).to.equal('First, Second, Third');
     });
 });
+
+describe('#insert', function() {
+    it('should insert text', function() {
+    	var sb = new StringBuilder(', Second');
+    	sb.insert('First').append(', Third');
+        var result = sb.toString();
+        expect(result).to.equal('First, Second, Third');
+    });
+});

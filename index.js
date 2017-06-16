@@ -631,64 +631,65 @@ var StringBuilder = function (content = '') {
      * @param {Number?} [limit = 0] The max number of substrings you want to search.
      * @returns {Array.<Number>} Return an array of searched indices.
      */
-    this.lastIndexOf = function (pattern, offset = 0, limit = 0) {
-        var patternUTF16Buffer = getBufferFromOutside(pattern);
-        if (patternUTF16Buffer === undefined) {
-            return [];
-        }
-        var sourceLength = length / 2;
-        var patternLength = patternUTF16Buffer.length / 2;
-        if (patternLength === 0 || offset < 0 || sourceLength - offset < patternLength) {
-            return [];
-        }
-        var sourceLength_dec = sourceLength - 1;
-        var patternLength_dec = patternLength - 1;
-        var resultList = [];
-        var badCharShiftMap = new Array(65536).fill(patternLength);
-        var patternUTF16 = [];
-        for (let i = patternLength_dec; i > 0; --i) {
-            let index = patternUTF16Buffer.readUInt16LE(i * 2);
-            patternUTF16.push(index);
-            badCharShiftMap[index] = i;
-        }
-        patternUTF16.push(patternUTF16Buffer.readUInt16LE(patternLength_dec * 2));
-        var specialChar = patternUTF16[patternLength_dec];
-        var specialShift = badCharShiftMap[specialChar];
-        badCharShiftMap[specialChar] = 0;
-        var sourcePointer = sourceLength_dec - patternLength_dec;
-        var patternPointer;
-        while (sourcePointer >= offset) {
-            patternPointer = 0;
-            while (patternPointer < patternLength) {
-                if (buffer.readUInt16LE(sourcePointer * 2) !== patternUTF16[patternPointer]) {
-                    break;
-                }
-                ++sourcePointer;
-                ++patternPointer;
-            }
-            let starePointer = sourcePointer;
-            let goodSuffixLength_inc = patternPointer + 1;
-            sourcePointer -= goodSuffixLength_inc;
-            if (patternPointer >= patternLength) {
-                resultList.push(sourcePointer + 1);
-                if (sourcePointer < 0 || limit > 0 && resultList.length === limit) {
-                    break;
-                } else {
-                    sourcePointer -= badCharShiftMap[buffer.readUInt16LE(sourcePointer * 2)];
-                    continue;
-                }
-            }
-            let shift1 = (sourcePointer >= 0) ? badCharShiftMap[buffer.readUInt16LE(sourcePointer * 2)] : 0;
-            if (shift1 >= patternLength_dec) {
-                sourcePointer -= shift1;
-            } else {
-                let c = buffer.readUInt16LE(starePointer * 2);
-                let shift2 = ((c === specialChar) ? specialShift : badCharShiftMap[c]) - goodSuffixLength_inc;
-                sourcePointer -= (shift1 >= shift2) ? shift1 : shift2;
-            }
-        }
-        return resultList;
-    };
+     this.lastIndexOf = function (pattern, offset = 0, limit = 0) {
+         var patternUTF16Buffer = getBufferFromOutside(pattern);
+         if (patternUTF16Buffer === undefined) {
+             return [];
+         }
+         var sourceLength = length / 2;
+         var patternLength = patternUTF16Buffer.length / 2;
+         if (patternLength === 0 || offset < 0 || sourceLength - offset < patternLength) {
+             return [];
+         }
+         var sourceLength_dec = sourceLength - 1;
+         var patternLength_dec = patternLength - 1;
+         var resultList = [];
+         var badCharShiftMap = new Array(65536).fill(patternLength);
+         var patternUTF16 = [];
+         for (let i = patternLength_dec; i > 0; --i) {
+             let index = patternUTF16Buffer.readUInt16LE(i * 2);
+             patternUTF16.push(index);
+             badCharShiftMap[index] = i;
+         }
+         patternUTF16.push(patternUTF16Buffer.readUInt16LE(0));
+         patternUTF16.reverse();
+         var specialChar = patternUTF16[patternLength_dec];
+         var specialShift = badCharShiftMap[specialChar];
+         badCharShiftMap[specialChar] = 0;
+         var sourcePointer = sourceLength_dec - patternLength_dec;
+         var patternPointer;
+         while (sourcePointer >= offset) {
+             patternPointer = 0;
+             while (patternPointer < patternLength) {
+                 if (buffer.readUInt16LE(sourcePointer * 2) !== patternUTF16[patternPointer]) {
+                     break;
+                 }
+                 ++sourcePointer;
+                 ++patternPointer;
+             }
+             let starePointer = sourcePointer;
+             let goodSuffixLength_inc = patternPointer + 1;
+             sourcePointer -= goodSuffixLength_inc;
+             if (patternPointer >= patternLength) {
+                 resultList.push(sourcePointer + 1);
+                 if (sourcePointer < 0 || limit > 0 && resultList.length === limit) {
+                     break;
+                 } else {
+                     sourcePointer -= badCharShiftMap[buffer.readUInt16LE(sourcePointer * 2)];
+                     continue;
+                 }
+             }
+             let shift1 = (sourcePointer >= 0) ? badCharShiftMap[buffer.readUInt16LE(sourcePointer * 2)] : 0;
+             if (shift1 >= patternLength_dec) {
+                 sourcePointer -= shift1;
+             } else {
+                 let c = buffer.readUInt16LE(starePointer * 2);
+                 let shift2 = ((c === specialChar) ? specialShift : badCharShiftMap[c]) - goodSuffixLength_inc;
+                 sourcePointer -= (shift1 >= shift2) ? shift1 : shift2;
+             }
+         }
+         return resultList;
+     };
 
     /**
      * Check the StringBuilder whether it starts with a specific pattern.
@@ -786,6 +787,20 @@ var StringBuilder = function (content = '') {
         start = getRealIndex(start);
         end = getRealIndex(end);
         return buffer.slice(start, end).toString('utf16le');
+    };
+
+    /**
+     * Build a UTF-8 buffer.
+     * <br/>
+     * <b>#Sync</b>
+     * @param {Number?} [start = 0] The start index.
+     * @param {Number?} [end = length] The end index.
+     * @returns {Buffer}
+     */
+    this.toBuffer = function (start = 0, end = length / 2) {
+        start = getRealIndex(start);
+        end = getRealIndex(end);
+        return Buffer2.transcode(buffer.slice(start, end), 'utf16le', 'utf8');
     };
 
     /**
