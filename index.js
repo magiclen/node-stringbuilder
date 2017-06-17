@@ -8,23 +8,16 @@ var blockSize = 256;
 /**
  * Build strings in memory.
  * @param {(String|Buffer|Number|Boolean|StringBuilder|ReadStream)?} [content = ''] The text you want to initialize.
+ * @param {Number?} [initialCapacity = 128] The initial capacity.
  * @constructor StringBuilder
  */
-var StringBuilder = function (content = '') {
+var StringBuilder = function (content = '', initialCapacity = blockSize / 2) {
     var self = this;
 
     // TODO -----Variables-----
-    var length = 0;
-    var capacity = blockSize;
+    var length;
+    var capacity;
     var buffer;
-
-    // TODO -----Initializer-----
-    if (arguments.length > 1) {
-        [length, capacity, buffer] = arguments;
-        content = '';
-    } else {
-        buffer = Buffer.allocUnsafe(blockSize);
-    }
 
     // TODO -----Functions-----
     /**
@@ -94,12 +87,13 @@ var StringBuilder = function (content = '') {
      * @param {Number} index
      */
     var getRealIndex = function (index) {
+        var halfLength = length / 2;
         if (index < 0) {
-            index = length / 2 + index;
+            index += halfLength;
         }
         if (index < 0) {
             index = 0;
-        } else if (index > length / 2) {
+        } else if (index > halfLength) {
             index = length;
         } else {
             index *= 2;
@@ -108,30 +102,20 @@ var StringBuilder = function (content = '') {
     };
 
     /**
-     * Whether the input buffer matches the specific position of this StringBuilder or not.
-     * @param {Buffer!} patternBuffer
-     * @param {Number?} [offset = 0]
-     * @returns {Boolean}
-     */
-    var isMatchWithBuffer = function (patternBuffer, offset = 0) {
-        let patternBufferLength = patternBuffer.length;
-        if (offset < 0 || patternBufferLength + offset > length) {
-            return false;
-        }
-        for (let i = 0; i < patternBufferLength; ++i) {
-            if (patternBuffer[i] !== buffer[i + offset]) {
-                return false;
-            }
-        }
-        return true;
-    };
-
-    /**
      * Whether the character can be trimmed or not.
      * @param {Number} characterCode
      */
     var isTrimmable = function (characterCode) {
         return characterCode <= 32 || characterCode === 12288;
+    };
+
+    /**
+     * Compute Floor(log2(n)).
+     * @param {Number} n
+     * @returns {Number}
+     */
+    var log2Floor = function (n) {
+        return Math.floor(Math.log(n) / Math.log(2));
     };
 
     // TODO -----Getters-----
@@ -200,10 +184,8 @@ var StringBuilder = function (content = '') {
         if (end === length || contentBufferLength === replaceLength) {
             contentBuffer.copy(buffer, start);
         } else {
-            let b = Buffer.allocUnsafe(length - end);
-            buffer.copy(b, 0, end);
+            buffer.copy(buffer, start + contentBufferLength, end, length);
             contentBuffer.copy(buffer, start);
-            b.copy(buffer, start + contentBufferLength);
         }
         length = concatLength;
         return this;
@@ -234,15 +216,21 @@ var StringBuilder = function (content = '') {
         if (offset === length) {
             contentBuffer.copy(buffer, length);
         } else {
-            let bs = Buffer.allocUnsafe(offset);
-            buffer.copy(bs, 0, 0, offset);
-            let be = Buffer.allocUnsafe(length - offset);
-            buffer.copy(be, 0, offset, length);
-            bs.copy(buffer, 0);
+            buffer.copy(buffer, offset + contentBufferLength, offset, length);
             contentBuffer.copy(buffer, offset);
-            be.copy(buffer, offset + contentBufferLength);
         }
         length = concatLength;
+        return this;
+    };
+
+    /**
+     * Clear this StringBuilder but preserve the capacity.
+     * <br/>
+     * <b>#Sync</b>
+     * @returns {StringBuilder}
+     */
+    this.clear = function () {
+        length = 0;
         return this;
     };
 
@@ -263,9 +251,7 @@ var StringBuilder = function (content = '') {
         if (end === length) {
             length = start;
         } else {
-            let b = Buffer.allocUnsafe(length - end);
-            buffer.copy(b, 0, end);
-            b.copy(buffer, start);
+            buffer.copy(buffer, start, end, length);
             length -= (end - start);
         }
         return this;
@@ -291,7 +277,7 @@ var StringBuilder = function (content = '') {
      * @param {Number?} [end = length] The end index.
      * @returns {StringBuilder}
      */
-    this.substring = this.slice = function (start = 0, end = length / 2) {
+    this.substring = function (start = 0, end = length / 2) {
         start = getRealIndex(start);
         end = getRealIndex(end);
         if (start >= end) {
@@ -302,12 +288,11 @@ var StringBuilder = function (content = '') {
             length = end;
         } else {
             length = end - start;
-            let b = Buffer.allocUnsafe(length);
-            buffer.copy(b, 0, start, end);
-            b.copy(buffer, 0);
+            buffer.copy(buffer, 0, start, end);
         }
         return this;
     };
+    this.slice = this.substring;
 
     /**
      * Reserve the substring at the specified position and length in this StringBuilder.
@@ -318,8 +303,8 @@ var StringBuilder = function (content = '') {
      * @returns {StringBuilder}
      */
     this.substr = function (start = 0, length = length / 2) {
-        start = getRealIndex(start);
-        if (length = 0) {
+        start = getRealIndex(start) / 2;
+        if (length < 0) {
             length = 0;
         }
         this.substring(start, start + length);
@@ -358,12 +343,49 @@ var StringBuilder = function (content = '') {
      * @returns {StringBuilder}
      */
     this.appendLine = function (content) {
-        this.insert(length / 2, content);
+        this.append(content);
         if (length === capacity) {
             reAlloc(capacity + 2);
         }
         buffer.writeUInt16LE(10, length);
         length += 2;
+        return this;
+    };
+
+    /**
+     * Append text into this StringBuilder repeatedly.
+     * <br/>
+     * <b>#Sync</b>
+     * @param {(String|Buffer|Number|Boolean|StringBuilder|ReadStream)!} content The text you want to append.
+     * @param {Number?} [repeatCount = 1] The count you want to repeat.
+     * @returns {StringBuilder}
+     */
+    this.appendRepeat = function (content, repeatCount = 1) {
+        if (repeatCount < 1) {
+            repeatCount = 1;
+        }
+        var contentBuffer = getBufferFromOutside(content);
+        if (contentBuffer === undefined) {
+            return this;
+        }
+        var contentBufferLength = contentBuffer.length;
+        var concatLength = length + (contentBufferLength * repeatCount);
+        reAlloc(concatLength);
+        // log2 copy
+        var log2Count = log2Floor(repeatCount);
+        contentBuffer.copy(buffer, length);
+        for (let i = 1; i <= log2Count; ++i) {
+            let addedLength = Math.pow(2, i - 1) * contentBufferLength;
+            buffer.copy(buffer, length + addedLength, length, length + addedLength);
+        }
+        var realAddedCount = Math.pow(2, log2Count);
+        length += contentBufferLength * realAddedCount;
+        // normal copy
+        var remainCount = repeatCount - realAddedCount;
+        for (let i = 0; i < remainCount; ++i) {
+            contentBuffer.copy(buffer, length);
+            length += contentBufferLength;
+        }
         return this;
     };
 
@@ -374,10 +396,19 @@ var StringBuilder = function (content = '') {
      * @param {(String|Buffer|Number|Boolean|StringBuilder|ReadStream)!} content The text you want to append.
      * @returns {StringBuilder}
      */
-    this.append = this.concat = function (content) {
-        this.insert(length / 2, content);
+    this.append = function (content) {
+        var contentBuffer = getBufferFromOutside(content);
+        if (contentBuffer === undefined) {
+            return this;
+        }
+        var contentBufferLength = contentBuffer.length;
+        var concatLength = length + contentBufferLength;
+        reAlloc(concatLength);
+        contentBuffer.copy(buffer, length);
+        length = concatLength;
         return this;
     };
+    this.concat = this.append;
 
     /**
      * Reverse the text.
@@ -401,7 +432,7 @@ var StringBuilder = function (content = '') {
      * <b>#Sync</b>
      * @returns {StringBuilder}
      */
-    this.upperCase = this.toUpperCase = function () {
+    this.upperCase = function () {
         for (let i = 0; i < length; i += 2) {
             let v = buffer.readUInt16LE(i);
             if (v >= 97 && v <= 122) {
@@ -410,6 +441,7 @@ var StringBuilder = function (content = '') {
         }
         return this;
     };
+    this.toUpperCase = this.upperCase;
 
     /**
      * Convert the text into lower case.
@@ -417,7 +449,7 @@ var StringBuilder = function (content = '') {
      * <b>#Sync</b>
      * @returns {StringBuilder}
      */
-    this.lowerCase = this.toLowerCase = function () {
+    this.lowerCase = function () {
         for (let i = 0; i < length; i += 2) {
             let v = buffer.readUInt16LE(i);
             if (v >= 65 && v <= 90) {
@@ -426,39 +458,49 @@ var StringBuilder = function (content = '') {
         }
         return this;
     };
+    this.toLowerCase = this.lowerCase;
 
     /**
      * Replace the substrings in a specific pattern in this StringBuilder.
      * <br/>
      * <b>#Sync</b>
-     * @param {(String|Buffer|Number|Boolean|StringBuilder|ReadStream)!} pattern The pattern you want to search.
+     * @param {(String|Buffer|Number|Boolean|StringBuilder|ReadStream|RegExp)!} pattern The pattern you want to search.
      * @param {(String|Buffer|Number|Boolean|StringBuilder|ReadStream)!} content The text you want to replace.
      * @param {Number?} [offset = 0] The number of characters you want to skip
      * @param {Number?} [limit = 1] The max number of characters you want to search.
      * @returns {StringBuilder}
      */
     this.replacePattern = function (pattern, content, offset = 0, limit = 1) {
-        var sbPattern = new StringBuilder(pattern);
-        var sbPatternLength = sbPattern.length();
-        var index = this.indexOf(sbPattern, offset, limit);
-        var indexLength = index.length;
-        if (indexLength === 0) {
-            return this;
-        }
-        var replaceStartIndex = [index[0]];
-        var replaceEndIndex = [];
-        var j = 0;
-        for (let i = 1; i < indexLength; ++i) {
-            var lastEndIndex = replaceStartIndex[j] + sbPatternLength;
-            if (lastEndIndex <= index[i]) {
-                replaceEndIndex.push(lastEndIndex);
-                replaceStartIndex.push(index[i]);
-                ++j;
+        if (pattern instanceof RegExp) {
+            let searched = this.indexOfRegExp(pattern, offset, limit);
+            let indexArray = searched.index;
+            let lastIndexArray = searched.lastIndex;
+            for (let i = indexArray.length - 1; i >= 0; --i) {
+                this.replace(indexArray[i], lastIndexArray[i], content);
             }
-        }
-        replaceEndIndex.push(replaceStartIndex[j] + sbPatternLength);
-        for (; j >= 0; --j) {
-            this.replace(replaceStartIndex[j], replaceEndIndex[j], content);
+        } else {
+            let sbPattern = new StringBuilder(pattern);
+            let sbPatternLength = sbPattern.length();
+            let index = this.indexOf(sbPattern, offset, limit);
+            let indexLength = index.length;
+            if (indexLength === 0) {
+                return this;
+            }
+            let replaceStartIndex = [index[0]];
+            let replaceEndIndex = [];
+            let j = 0;
+            for (let i = 1; i < indexLength; ++i) {
+                let lastEndIndex = replaceStartIndex[j] + sbPatternLength;
+                if (lastEndIndex <= index[i]) {
+                    replaceEndIndex.push(lastEndIndex);
+                    replaceStartIndex.push(index[i]);
+                    ++j;
+                }
+            }
+            replaceEndIndex.push(replaceStartIndex[j] + sbPatternLength);
+            for (; j >= 0; --j) {
+                this.replace(replaceStartIndex[j], replaceEndIndex[j], content);
+            }
         }
         return this;
     };
@@ -467,7 +509,7 @@ var StringBuilder = function (content = '') {
      * Replace all the substrings in a specific pattern in this StringBuilder.
      * <br/>
      * <b>#Sync</b>
-     * @param {(String|Buffer|Number|Boolean|StringBuilder|ReadStream)!} pattern The pattern you want to search.
+     * @param {(String|Buffer|Number|Boolean|StringBuilder|ReadStream|RegExp)!} pattern The pattern you want to search.
      * @param {(String|Buffer|Number|Boolean|StringBuilder|ReadStream)!} content The text you want to replace.
      * @returns {StringBuilder}
      */
@@ -508,26 +550,72 @@ var StringBuilder = function (content = '') {
      * <br/>
      * <b>#Sync</b>
      * @param {Number!} newCapacity The new capacity you want to set.
-     * @returns {Number} The updated capacity.
+     * @param {Boolean?} [returnUpdatedCapacity = false] Return the updated capacity or the reference of this StringBuilder.
+     * @returns {Number|StringBuilder} The updated capacity or the reference of this StringBuilder.
      */
-    this.expandCapacity = function (newCapacity) {
+    this.expandCapacity = function (newCapacity, returnUpdatedCapacity = false) {
         reAlloc(newCapacity * 2);
-        return capacity / 2;
+        if (returnUpdatedCapacity) {
+            return capacity / 2;
+        }
+        return this;
     };
 
     /**
      * Shrink the capacity.
      * <br/>
      * <b>#Sync</b>
-     * @returns {Number} The updated capacity.
+     * @param {Boolean?} [returnUpdatedCapacity = false] Return the updated capacity or the reference of this StringBuilder.
+     * @returns {Number|StringBuilder} The updated capacity or the reference of this StringBuilder.
      */
-    this.shrinkCapacity = function () {
+    this.shrinkCapacity = function (returnUpdatedCapacity = false) {
         let count = Math.ceil(length / blockSize);
-        capacity = count * blockSize;
-        let emptyBuffer = Buffer.allocUnsafe(capacity);
-        buffer.copy(emptyBuffer, 0, 0, length);
-        buffer = emptyBuffer;
-        return capacity / 2;
+        if (count === 0) {
+            count = 1;
+        }
+        let newCapacity = count * blockSize;
+        if (newCapacity < capacity) {
+            let emptyBuffer = Buffer.allocUnsafe(newCapacity);
+            buffer.copy(emptyBuffer, 0, 0, length);
+            buffer = emptyBuffer;
+            capacity = newCapacity;
+        }
+        if (returnUpdatedCapacity) {
+            return capacity / 2;
+        }
+        return this;
+    };
+
+    /**
+     * Repeat this StringBuilder.
+     * <br/>
+     * <b>#Sync</b>
+     * @param {Number?} [repeatCount = 1] The count you want to repeat.
+     * @returns {StringBuilder}
+     */
+    this.repeat = function (repeatCount = 1) {
+        if (repeatCount <= 0) {
+            return this;
+        }
+        var finalLength = length * repeatCount;
+        var originalLength = length;
+        reAlloc(finalLength);
+        // log2 copy
+        var log2Count = log2Floor(repeatCount);
+        buffer.copy(buffer, originalLength);
+        for (let i = 1; i <= log2Count; ++i) {
+            let addedLength = Math.pow(2, i - 1) * originalLength;
+            buffer.copy(buffer, originalLength + addedLength, originalLength, originalLength + addedLength);
+        }
+        var realAddedCount = Math.pow(2, log2Count);
+        length += originalLength * realAddedCount;
+        // normal copy
+        var remainCount = repeatCount - realAddedCount;
+        for (let i = 0; i < remainCount; ++i) {
+            buffer.copy(buffer, length, 0, originalLength);
+            length += originalLength;
+        }
+        return this;
     };
 
     // TODO -----Unchangers-----
@@ -553,37 +641,76 @@ var StringBuilder = function (content = '') {
     };
 
     /**
+     * Search the substrings in the source text by using RegExp. This function needs to build the string.
+     * <br/>
+     * <b>#Sync</b>
+     * @param {RegExp!} regExp The regular expression pattern you want to use.
+     * @param {Number?} [offset = 0] The number of characters you want to skip
+     * @param {Number?} [limit = 0] The max number of substrings you want to search.
+     * @returns {{index: Array.<Number>, lastIndex: Array.<Number>}} Return two arrays of searched indices.
+     */
+    this.indexOfRegExp = function (regExp, offset = 0, limit = 0) {
+        if (!(regExp instanceof RegExp)) {
+            regExp = new RegExp(regExp.toString());
+        }
+        offset = getRealIndex(offset);
+        var str = buffer.slice(offset, length).toString('utf16le');
+        var match;
+        var resultIndexList = [];
+        var resultLastIndexList = [];
+        if (regExp.global) {
+            while (match = regExp.exec(str)) {
+                let index = match.index;
+                resultIndexList.push(index);
+                resultLastIndexList.push(index + match[0].length);
+                if (limit > 0 && resultIndexList.length === limit) {
+                    break;
+                }
+            }
+        } else if (match = regExp.exec(str)) {
+            let index = match.index;
+            resultIndexList.push(index);
+            resultLastIndexList.push(index + match[0].length);
+        }
+        return {
+            index: resultIndexList,
+            lastIndex: resultLastIndexList
+        };
+    };
+
+    /**
      * Search the substrings in the source text by using Boyer-Moore-MagicLen algorithm.
      * See '[this page]{@link https://magiclen.org/boyer-moore-magiclen/}' for more details.
      * <br/>
      * <b>#Sync</b>
-     * @param {(String|Buffer|Number|Boolean|StringBuilder|ReadStream)!} pattern The pattern you want to search.
+     * @param {(String|Buffer|Number|Boolean|StringBuilder|ReadStream|RegExp)!} pattern The pattern you want to search.
      * @param {Number?} [offset = 0] The number of characters you want to skip
      * @param {Number?} [limit = 0] The max number of substrings you want to search.
      * @returns {Array.<Number>} Return an array of searched indices.
      */
     this.indexOf = function (pattern, offset = 0, limit = 0) {
-        var patternUTF16Buffer = getBufferFromOutside(pattern);
-        if (patternUTF16Buffer === undefined) {
+        if (pattern instanceof RegExp) {
+            return this.indexOfRegExp(pattern, offset, limit).index;
+        }
+        var patternBuffer = getBufferFromOutside(pattern);
+        if (patternBuffer === undefined) {
             return [];
         }
-        var sourceLength = length / 2;
-        var patternLength = patternUTF16Buffer.length / 2;
+        var sourceLength = length;
+        var patternLength = patternBuffer.length;
+        offset = getRealIndex(offset);
         if (patternLength === 0 || offset < 0 || sourceLength - offset < patternLength) {
             return [];
         }
         var sourceLength_dec = sourceLength - 1;
         var patternLength_dec = patternLength - 1;
         var resultList = [];
-        var badCharShiftMap = new Array(65536).fill(patternLength);
-        var patternUTF16 = [];
+        var badCharShiftMap = new Array(256).fill(patternLength);
         for (let i = 0; i < patternLength_dec; ++i) {
-            let index = patternUTF16Buffer.readUInt16LE(i * 2);
-            patternUTF16.push(index);
+            let index = patternBuffer[i];
             badCharShiftMap[index] = patternLength_dec - i;
         }
-        patternUTF16.push(patternUTF16Buffer.readUInt16LE(patternLength_dec * 2));
-        var specialChar = patternUTF16[patternLength_dec];
+        var specialChar = patternBuffer[patternLength_dec];
         var specialShift = badCharShiftMap[specialChar];
         badCharShiftMap[specialChar] = 0;
         var sourcePointer = offset + patternLength_dec;
@@ -591,7 +718,7 @@ var StringBuilder = function (content = '') {
         while (sourcePointer < sourceLength) {
             patternPointer = patternLength_dec;
             while (patternPointer >= 0) {
-                if (buffer.readUInt16LE(sourcePointer * 2) !== patternUTF16[patternPointer]) {
+                if (buffer[sourcePointer] !== patternBuffer[patternPointer]) {
                     break;
                 }
                 --sourcePointer;
@@ -601,19 +728,19 @@ var StringBuilder = function (content = '') {
             let goodSuffixLength_inc = patternLength - patternPointer;
             sourcePointer += goodSuffixLength_inc;
             if (patternPointer < 0) {
-                resultList.push(starePointer + 1);
+                resultList.push((starePointer + 1) / 2);
                 if (sourcePointer > sourceLength_dec || limit > 0 && resultList.length === limit) {
                     break;
                 } else {
-                    sourcePointer += badCharShiftMap[buffer.readUInt16LE(sourcePointer * 2)];
+                    sourcePointer += badCharShiftMap[buffer[sourcePointer]];
                     continue;
                 }
             }
-            let shift1 = (sourcePointer <= sourceLength_dec) ? badCharShiftMap[buffer.readUInt16LE(sourcePointer * 2)] : 0;
+            let shift1 = (sourcePointer <= sourceLength_dec) ? badCharShiftMap[buffer[sourcePointer]] : 0;
             if (shift1 >= patternLength_dec) {
                 sourcePointer += shift1;
             } else {
-                let c = buffer.readUInt16LE(starePointer * 2);
+                let c = buffer[starePointer];
                 let shift2 = ((c === specialChar) ? specialShift : badCharShiftMap[c]) - goodSuffixLength_inc;
                 sourcePointer += (shift1 >= shift2) ? shift1 : shift2;
             }
@@ -631,65 +758,62 @@ var StringBuilder = function (content = '') {
      * @param {Number?} [limit = 0] The max number of substrings you want to search.
      * @returns {Array.<Number>} Return an array of searched indices.
      */
-     this.lastIndexOf = function (pattern, offset = 0, limit = 0) {
-         var patternUTF16Buffer = getBufferFromOutside(pattern);
-         if (patternUTF16Buffer === undefined) {
-             return [];
-         }
-         var sourceLength = length / 2;
-         var patternLength = patternUTF16Buffer.length / 2;
-         if (patternLength === 0 || offset < 0 || sourceLength - offset < patternLength) {
-             return [];
-         }
-         var sourceLength_dec = sourceLength - 1;
-         var patternLength_dec = patternLength - 1;
-         var resultList = [];
-         var badCharShiftMap = new Array(65536).fill(patternLength);
-         var patternUTF16 = [];
-         for (let i = patternLength_dec; i > 0; --i) {
-             let index = patternUTF16Buffer.readUInt16LE(i * 2);
-             patternUTF16.push(index);
-             badCharShiftMap[index] = i;
-         }
-         patternUTF16.push(patternUTF16Buffer.readUInt16LE(0));
-         patternUTF16.reverse();
-         var specialChar = patternUTF16[patternLength_dec];
-         var specialShift = badCharShiftMap[specialChar];
-         badCharShiftMap[specialChar] = 0;
-         var sourcePointer = sourceLength_dec - patternLength_dec;
-         var patternPointer;
-         while (sourcePointer >= offset) {
-             patternPointer = 0;
-             while (patternPointer < patternLength) {
-                 if (buffer.readUInt16LE(sourcePointer * 2) !== patternUTF16[patternPointer]) {
-                     break;
-                 }
-                 ++sourcePointer;
-                 ++patternPointer;
-             }
-             let starePointer = sourcePointer;
-             let goodSuffixLength_inc = patternPointer + 1;
-             sourcePointer -= goodSuffixLength_inc;
-             if (patternPointer >= patternLength) {
-                 resultList.push(sourcePointer + 1);
-                 if (sourcePointer < 0 || limit > 0 && resultList.length === limit) {
-                     break;
-                 } else {
-                     sourcePointer -= badCharShiftMap[buffer.readUInt16LE(sourcePointer * 2)];
-                     continue;
-                 }
-             }
-             let shift1 = (sourcePointer >= 0) ? badCharShiftMap[buffer.readUInt16LE(sourcePointer * 2)] : 0;
-             if (shift1 >= patternLength_dec) {
-                 sourcePointer -= shift1;
-             } else {
-                 let c = buffer.readUInt16LE(starePointer * 2);
-                 let shift2 = ((c === specialChar) ? specialShift : badCharShiftMap[c]) - goodSuffixLength_inc;
-                 sourcePointer -= (shift1 >= shift2) ? shift1 : shift2;
-             }
-         }
-         return resultList;
-     };
+    this.lastIndexOf = function (pattern, offset = 0, limit = 0) {
+        var patternBuffer = getBufferFromOutside(pattern);
+        if (patternBuffer === undefined) {
+            return [];
+        }
+        var sourceLength = length;
+        var patternLength = patternBuffer.length;
+        offset = getRealIndex(offset);
+        if (patternLength === 0 || offset < 0 || sourceLength - offset < patternLength) {
+            return [];
+        }
+        var sourceLength_dec = sourceLength - 1;
+        var patternLength_dec = patternLength - 1;
+        var resultList = [];
+        var badCharShiftMap = new Array(256).fill(patternLength);
+        for (let i = patternLength_dec; i > 0; --i) {
+            let index = patternBuffer[i];
+            badCharShiftMap[index] = i;
+        }
+        var specialChar = patternBuffer[patternLength_dec];
+        var specialShift = badCharShiftMap[specialChar];
+        badCharShiftMap[specialChar] = 0;
+        var sourcePointer = sourceLength_dec - patternLength_dec;
+        var patternPointer;
+        while (sourcePointer >= offset) {
+            patternPointer = 0;
+            while (patternPointer < patternLength) {
+                if (buffer[sourcePointer] !== patternBuffer[patternPointer]) {
+                    break;
+                }
+                ++sourcePointer;
+                ++patternPointer;
+            }
+            let starePointer = sourcePointer;
+            let goodSuffixLength_inc = patternPointer + 1;
+            sourcePointer -= goodSuffixLength_inc;
+            if (patternPointer >= patternLength) {
+                resultList.push((sourcePointer + 1) / 2);
+                if (sourcePointer < 0 || limit > 0 && resultList.length === limit) {
+                    break;
+                } else {
+                    sourcePointer -= badCharShiftMap[buffer[sourcePointer]];
+                    continue;
+                }
+            }
+            let shift1 = (sourcePointer >= 0) ? badCharShiftMap[buffer[sourcePointer]] : 0;
+            if (shift1 >= patternLength_dec) {
+                sourcePointer -= shift1;
+            } else {
+                let c = buffer[starePointer];
+                let shift2 = ((c === specialChar) ? specialShift : badCharShiftMap[c]) - goodSuffixLength_inc;
+                sourcePointer -= (shift1 >= shift2) ? shift1 : shift2;
+            }
+        }
+        return resultList;
+    };
 
     /**
      * Check the StringBuilder whether it starts with a specific pattern.
@@ -699,11 +823,20 @@ var StringBuilder = function (content = '') {
      * @returns {Boolean}
      */
     this.startsWith = function (pattern) {
-        var patternUTF16Buffer = getBufferFromOutside(pattern);
-        if (patternUTF16Buffer === undefined) {
+        var patternBuffer = getBufferFromOutside(pattern);
+        if (patternBuffer === undefined) {
             return false;
         }
-        return isMatchWithBuffer(patternUTF16Buffer, 0);
+        let patternBufferLength = patternBuffer.length;
+        if (patternBufferLength > length) {
+            return false;
+        }
+        for (let i = 0; i < patternBufferLength; ++i) {
+            if (patternBuffer[i] !== buffer[i]) {
+                return false;
+            }
+        }
+        return true;
     };
 
     /**
@@ -714,11 +847,15 @@ var StringBuilder = function (content = '') {
      * @returns {Boolean}
      */
     this.endsWith = function (pattern) {
-        var patternUTF16Buffer = getBufferFromOutside(pattern);
-        if (patternUTF16Buffer === undefined) {
+        var patternBuffer = getBufferFromOutside(pattern);
+        if (patternBuffer === undefined) {
             return false;
         }
-        return isMatchWithBuffer(patternUTF16Buffer, length - patternUTF16Buffer.length);
+        let offset = length - patternBuffer.length;
+        if (offset < 0) {
+            return false;
+        }
+        return buffer.includes(patternBuffer, offset);
     };
 
     /**
@@ -736,12 +873,7 @@ var StringBuilder = function (content = '') {
         if (dataBuffer.length !== length) {
             return false;
         }
-        for (let i = 0; i < length; ++i) {
-            if (dataBuffer[i] !== buffer[i]) {
-                return false;
-            }
-        }
-        return true;
+        return buffer.includes(dataBuffer);
     };
 
     /**
@@ -888,12 +1020,38 @@ var StringBuilder = function (content = '') {
         return sum;
     };
 
-    // TODO -----Initialize-----
-    this.append(content);
+    // TODO -----Initializer-----
+    if (arguments.length > 2) {
+        [length, capacity, buffer] = arguments;
+    } else {
+        let contentBuffer = getBufferFromOutside(content);
+        if (contentBuffer === undefined) {
+            return this;
+        }
+        length = contentBuffer.length;
+        let capacityLength = Math.max(initialCapacity * 2, length);
+        let count = Math.ceil(capacityLength / blockSize);
+        if (count === 0) {
+            count = 1;
+        }
+        capacity = count * blockSize;
+        buffer = Buffer.allocUnsafe(capacity);
+        contentBuffer.copy(buffer, 0);
+    }
 };
 
 StringBuilder.prototype.inspect = function () {
     return this.toString();
+};
+
+/**
+ * Build strings in memory.
+ * @param {(String|Buffer|Number|Boolean|StringBuilder|ReadStream)?} [content = ''] The text you want to initialize.
+ * @param {Number?} [initialCapacity = 128] The initial capacity.
+ * @returns {StringBuilder}
+ */
+StringBuilder.from = function (content, initialCapacity = blockSize / 2) {
+    return new StringBuilder(content, initialCapacity);
 };
 
 module.exports = StringBuilder;
