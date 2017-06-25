@@ -3,6 +3,8 @@ StringBuilder for Node.js
 
 An easy and fast in-memory string builder for Node.js.
 
+NOTICE: N-API is a new experimental feature in Node.js 8. Currently, it can be used by adding `--napi-modules` option when executing Node.js 8.
+
 ## Code Example
 
 ```javascript
@@ -10,7 +12,7 @@ const StringBuilder = require('node-stringbuilder');
 var sb = new StringBuilder('Hi');
 sb.appendLine(',').append('This is a simple example demonstrating how to use this module.');
 console.log(sb.toString()); // Hi,
-                            // This is a simple example demonstrating how to use this module.
+// This is a simple example demonstrating how to use this module.
 sb.insert('Text can be added into any position of this builder.');
 sb.replace(53, 118, 'Or replace the existing text.');
 console.log(sb.toString()); // Text can be added into any position of this builder.HOr replace the existing text.
@@ -22,8 +24,11 @@ console.log(sb.clone().reverse().toString()); // .gnirts gnitsixe eht ecalper ro
 console.log(sb.toString(0, 19)); // string can be added
 console.log(sb.length()); // 86
 console.log(sb.count()); // 15
-console.log(sb.indexOf('is')); // [ 43, 72 ]
-console.log(sb.lastIndexOf('is')); // [ 72, 43 ]
+console.log(sb.indexOf('is')); // Uint32Array [ 43, 72 ]
+console.log(sb.indexOfSkip('is')); // Uint32Array [ 43, 72 ]
+console.log(sb.lastIndexOf('is')); // Uint32Array [ 72, 43 ]
+console.log(sb.indexOfRegExp(/is/g)); // { index: [ 43, 72 ], lastIndex: [ 45, 74 ] }
+console.log(sb.repeat().indexOf('is')); // Uint32Array [ 43, 72, 129, 158 ]
 sb.substring(11, 37);
 console.log(sb.toString()); // be added into any position
 console.log(sb.equalsIgnoreCase('be Added into Any position')); // true
@@ -47,6 +52,7 @@ npm install node-stringbuilder --save
 
 ## Features
 
+  * Implemented with N-API.
   * Operating strings in a scalable buffer.
   * Multiple types of data are allowed to input.
     * Strings
@@ -299,7 +305,13 @@ Search substrings from the head,
 
 ```javascript
 var indexArray = sb.indexOf('string');
-var indexArray2 = sb.indexOf(/string/g, offset, limit);
+var indexArray2 = sb.indexOf('string', offset, limit);
+```
+
+Search substrings from the head by using RegExp,
+
+```javascript
+var indexArray = sb.indexOf(/string/g);
 ```
 
 Search substrings from the end,
@@ -307,8 +319,6 @@ Search substrings from the end,
 ```javascript
 var indexArray = sb.lastIndexOf('string');
 ```
-
-RegExp is not supported in `lastIndexOf` method.
 
 ### Equals
 
@@ -359,69 +369,73 @@ npm install
 npm run benchmark
 ```
 
-Here is my report,
+Here is my result,
 
 ```bash
-  Append
-   - 44 milliseconds
-   ✓ natively append text 1000000 times (44ms)
-   - 259 milliseconds
-   ✓ Using StringBuilder to append text 1000000 times (262ms)
-   - 43 milliseconds
-   ✓ Using StringBuilder to append text 1000000 times repeatly (44ms)
+Append
+  - 43 milliseconds
+  ✓ Natively append text 1000000 times (43ms)
+  - 567 milliseconds
+  ✓ Use StringBuilder to append text 1000000 times (567ms)
+  - 1278 milliseconds
+  ✓ Use StringBuilder to insert text 1000000 times at the end (1287ms)
+  - 17 milliseconds
+  ✓ Use StringBuilder to append text 1000000 times repeatly
 
- Insert
-   - 53 milliseconds
-   ✓ natively insert text 10000 times (53ms)
-   - 10 milliseconds
-   ✓ Using StringBuilder to insert text 10000 times
+Insert
+  - 92 milliseconds
+  ✓ Natively insert text 10000 times (92ms)
+  - 10 milliseconds
+  ✓ Use StringBuilder to insert text 10000 times
 
- Delete
-   - 1362 milliseconds
-   ✓ natively delete text 5000 times (1364ms)
-   - 90 milliseconds
-   ✓ Using StringBuilder to delete text 5000 times (91ms)
+Delete
+  - 1427 milliseconds
+  ✓ Natively delete text 5000 times (1429ms)
+  - 87 milliseconds
+  ✓ Use StringBuilder to delete text 5000 times (88ms)
 
- Replace
-   - 1485 milliseconds
-   ✓ natively replace text 5000 times (1486ms)
-   - 90 milliseconds
-   ✓ Using StringBuilder to replace text 5000 times (91ms)
+Replace
+  - 1511 milliseconds
+  ✓ Natively replace text 5000 times (1513ms)
+  - 85 milliseconds
+  ✓ Use StringBuilder to replace text 5000 times (86ms)
 
- Replace Pattern
-   - 39 milliseconds
-   ✓ natively replace text by using a RegExp pattern (39ms)
-   - 666 milliseconds
-   ✓ Using StringBuilder to replace text by using a pattern (673ms)
+Replace Pattern
+  - 37 milliseconds
+  ✓ Natively replace text with the same length by using a RegExp pattern
+  - 20 milliseconds
+  ✓ Use StringBuilder to replace text with the same length by using a pattern
+  - 35 milliseconds
+  ✓ Natively replace text by using a RegExp pattern
+  - 29 milliseconds
+  ✓ Use StringBuilder to replace text by using a pattern
 
- Equals
-   - 1 milliseconds
-   ✓ natively check the equal 50000 times
-   - 14 milliseconds
-   ✓ Using StringBuilder to check the equal 50000 times
+Equals
+  - 2 milliseconds
+  ✓ Natively check the equal 50000 times
+  - 13 milliseconds
+  ✓ Use StringBuilder to check the equal 50000 times
 
- EqualsIgnoreCase
-   - 6 milliseconds
-   ✓ natively check the equal 50000 times
-   - 53 milliseconds
-   ✓ Using StringBuilder to check the equal 50000 times (54ms)
+EqualsIgnoreCase
+  - 21 milliseconds
+  ✓ Natively check the equal 50000 times
+  - 19 milliseconds
+  ✓ Use StringBuilder to check the equal 50000 times
 
- IndexOf
-   - 36 milliseconds
-   ✓ natively search text
-   - 212 milliseconds
-   ✓ Using StringBuilder to search text (218ms)
+IndexOf
+  - 65 milliseconds
+  ✓ Natively search text (65ms)
+  - 2 milliseconds
+  ✓ Use StringBuilder to search text
 
- Reverse
-   - 10 milliseconds
-   ✓ natively reverse text
-   - 9 milliseconds
-   ✓ Using StringBuilder to reverse text
+Reverse
+  - 516 milliseconds
+  ✓ Natively reverse text (516ms)
+  - 14 milliseconds
+  ✓ Use StringBuilder to reverse text
 ```
 
-According to the result of benchmark, if you just want to append strings, please append them by using native operator `+` instead of this module.
-
-And although this module uses Boyer-Moore-MagicLen for searching strings, it still slower than the native implement because the Javascript code is not efficiency enough. It needs to be moved to the native layer(C/C++ code) in the future.
+According to the result of benchmark, if you just want to append a few different strings, please append them by using native operator `+` instead of this module.
 
 ## License
 
@@ -430,6 +444,5 @@ And although this module uses Boyer-Moore-MagicLen for searching strings, it sti
 ## To Do
 
  * More test cases
- * Use C/C++ lib to improve the performance
 
 If you can help me do this as collaborators, I will be grateful.
