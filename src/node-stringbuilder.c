@@ -1927,6 +1927,7 @@ void Init (napi_env env, napi_value exports, napi_value module, void* priv) {
         napi_define_properties(env, exports, 2, allDesc);
 
         napi_property_descriptor stringBuilderAllDesc[] = {
+                {"from", 0, from, 0, 0, 0, napi_static, 0},
                 {"inspect", 0, Inspect, 0, 0, 0, napi_default, 0},
                 {"toString", 0, ToString, 0, 0, 0, napi_default, 0},
                 {"toBuffer", 0, ToBuffer, 0, 0, 0, napi_default, 0},
@@ -1967,7 +1968,7 @@ void Init (napi_env env, napi_value exports, napi_value module, void* priv) {
                 {"shrinkCapacity", 0, ShrinkCapacity, 0, 0, 0, napi_default, 0}
         };
         napi_value cons;
-        napi_define_class(env, "StringBuilder", constructor, 0, 38, stringBuilderAllDesc, &cons);
+        napi_define_class(env, "StringBuilder", constructor, 0, 39, stringBuilderAllDesc, &cons);
         napi_set_named_property(env, exports, "StringBuilder", cons);
         napi_create_reference(env, cons, 1, &StringBuilderRef);
 

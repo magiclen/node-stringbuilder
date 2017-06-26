@@ -6,28 +6,28 @@ const StringBuilder = require('../index');
 
 describe('#append', function() {
   it('should append text', function() {
-    var sb = new StringBuilder('First');
+    var sb = StringBuilder.from('First');
     sb.append(', Second').append(', Third');
     var result = sb.toString();
     expect(result).to.equal('First, Second, Third');
   });
 
   it('should append text', function() {
-    var sb = new StringBuilder('');
+    var sb = StringBuilder.from('');
     sb.append('First').append(', Second').append(', Third');
     var result = sb.toString();
     expect(result).to.equal('First, Second, Third');
   });
 
   it('should append text and line, and finally trim the whitespace', function() {
-    var sb = new StringBuilder('');
+    var sb = StringBuilder.from('');
     sb.appendLine('First').appendLine('Second').appendLine('Third');
     var result = sb.trim().toString();
     expect(result).to.equal('First\nSecond\nThird');
   });
 
   it('should append text repeatedly, finally delete the last two characters', function() {
-    var sb = new StringBuilder('');
+    var sb = StringBuilder.from('');
     sb.appendRepeat('Three, ', 3).delete(-2);
     var result = sb.trim().toString();
     expect(result).to.equal('Three, Three, Three');
@@ -36,21 +36,21 @@ describe('#append', function() {
 
 describe('#insert', function() {
   it('should insert text at head', function() {
-    var sb = new StringBuilder(', Second');
+    var sb = StringBuilder.from(', Second');
     sb.insert('First').append(', Third');
     var result = sb.toString();
     expect(result).to.equal('First, Second, Third');
   });
 
   it('should insert text at middle', function() {
-    var sb = new StringBuilder('First');
+    var sb = StringBuilder.from('First');
     sb.append(', Third').insert(5, ', Second');
     var result = sb.toString();
     expect(result).to.equal('First, Second, Third');
   });
 
   it('should insert text at end', function() {
-    var sb = new StringBuilder('First');
+    var sb = StringBuilder.from('First');
     sb.insert(sb.length(), ', Second').insert(sb.length(), ', Third');
     var result = sb.toString();
     expect(result).to.equal('First, Second, Third');
