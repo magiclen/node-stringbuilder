@@ -1883,6 +1883,7 @@ napi_value constructor(napi_env env, napi_callback_info info){
         case 0:
                 contentLength = 0;
                 initialCapacity = blockSize / 2;
+                freeAble = false;
                 break;
         case 1:
                 getUTF16FromOutside(env, args[0], &contentBuffer, &contentLength, &freeAble);

@@ -61,7 +61,7 @@
     "v8_use_snapshot": "true",
     "want_separate_host_toolset": 0,
     "want_separate_host_toolset_mkpeephole": 0,
-    "nodedir": "/home/magiclen/.node-gyp/8.1.2",
+    "nodedir": "/home/magiclen/.node-gyp/8.1.3",
     "standalone_static_library": 1
   }
 }
