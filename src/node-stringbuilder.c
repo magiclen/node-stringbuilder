@@ -502,7 +502,7 @@ napi_value Length(napi_env env, napi_callback_info info){
         getMetaData(env, me, &metadata);
 
         napi_value result;
-        napi_create_number(env, metadata[1] / 2, &result);
+        napi_create_int64(env, metadata[1] / 2, &result);
         return result;
 };
 
@@ -516,7 +516,7 @@ napi_value Capacity(napi_env env, napi_callback_info info){
         getMetaData(env, me, &metadata);
 
         napi_value result;
-        napi_create_number(env, metadata[0] / 2, &result);
+        napi_create_int64(env, metadata[0] / 2, &result);
         return result;
 };
 
@@ -1230,7 +1230,7 @@ napi_value ExpandCapacity(napi_env env, napi_callback_info info){
         reAlloc(env, me, &buffer, &metadata, newCapacity * 2);
         if (returnUpdatedCapacity) {
                 napi_value result;
-                napi_create_number(env, metadata[0] / 2, &result);
+                napi_create_int64(env, metadata[0] / 2, &result);
                 return result;
         }
         return me;
@@ -1270,7 +1270,7 @@ napi_value ShrinkCapacity(napi_env env, napi_callback_info info){
 
         if (returnUpdatedCapacity) {
                 napi_value result;
-                napi_create_number(env, metadata[0] / 2, &result);
+                napi_create_int64(env, metadata[0] / 2, &result);
                 return result;
         }
         return me;
@@ -1469,7 +1469,7 @@ napi_value Count(napi_env env, napi_callback_info info){
                 ++sum;
         }
         napi_value result;
-        napi_create_number(env, sum, &result);
+        napi_create_int64(env, sum, &result);
         return result;
 }
 
@@ -1713,8 +1713,8 @@ napi_value IndexOfRegExp(napi_env env, napi_callback_info info){
         napi_value r, s, o,l;
         r = args[0];
         napi_create_string_utf16(env, buffer + (offset / 2), (metadata[1] - offset) / 2, &s);
-        napi_create_number(env, offset / 2, &o);
-        napi_create_number(env, limit, &l);
+        napi_create_int64(env, offset / 2, &o);
+        napi_create_int64(env, limit, &l);
 
         napi_value t_args[4];
         t_args[0] = r;
@@ -1974,10 +1974,10 @@ void Init (napi_env env, napi_value exports, napi_value module, void* priv) {
         napi_create_reference(env, cons, 1, &StringBuilderRef);
 
         napi_value bTrue, bFalse;
-        napi_create_number(env, 1, &bTrue);
+        napi_create_int32(env, 1, &bTrue);
         napi_coerce_to_bool(env, bTrue, &bTrue);
         napi_create_reference(env, bTrue, 1, &TrueRef);
-        napi_create_number(env, 0, &bFalse);
+        napi_create_int32(env, 0, &bFalse);
         napi_coerce_to_bool(env, bFalse, &bFalse);
         napi_create_reference(env, bFalse, 1, &FalseRef);
 }
