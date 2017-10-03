@@ -1920,7 +1920,7 @@ napi_value constructor(napi_env env, napi_callback_info info){
         return me;
 }
 
-void Init (napi_env env, napi_value exports, napi_value module, void* priv) {
+napi_value Init (napi_env env, napi_value exports) {
         napi_property_descriptor allDesc[] = {
                 {"from", 0, from, 0, 0, 0, napi_default, 0},
                 {"_initialize", 0, initialize, 0, 0, 0, napi_default, 0}
@@ -1969,7 +1969,7 @@ void Init (napi_env env, napi_value exports, napi_value module, void* priv) {
                 {"shrinkCapacity", 0, ShrinkCapacity, 0, 0, 0, napi_default, 0}
         };
         napi_value cons;
-        napi_define_class(env, "StringBuilder", constructor, 0, 39, stringBuilderAllDesc, &cons);
+        napi_define_class(env, "StringBuilder", -1, constructor, 0, 39, stringBuilderAllDesc, &cons);
         napi_set_named_property(env, exports, "StringBuilder", cons);
         napi_create_reference(env, cons, 1, &StringBuilderRef);
 
@@ -1980,6 +1980,7 @@ void Init (napi_env env, napi_value exports, napi_value module, void* priv) {
         napi_create_int32(env, 0, &bFalse);
         napi_coerce_to_bool(env, bFalse, &bFalse);
         napi_create_reference(env, bFalse, 1, &FalseRef);
+        return exports;
 }
 
 NAPI_MODULE(node_stringbuilder, Init);
