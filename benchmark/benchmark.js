@@ -6,6 +6,7 @@ const mlog = require('mocha-logger');
 const StringBuilder = require('../index');
 
 describe('Append', function() {
+  this.timeout(15000);
   var a = 'The first string.'
   var b = 'The second string.'
   var c = 'The third string.'
@@ -52,6 +53,7 @@ describe('Append', function() {
 });
 
 describe('Insert', function() {
+  this.timeout(15000);
   var a = 'This is a simple example demonstrating how to use this module.';
   var b = '12345';
   var startTime, endTime;
@@ -83,6 +85,7 @@ describe('Insert', function() {
 });
 
 describe('Delete', function() {
+  this.timeout(15000);
   var a = '';
   for (let i = 0; i < 10000; ++i) {
     a += 'This is a simple example demonstrating how to use this module.';
@@ -116,6 +119,7 @@ describe('Delete', function() {
 });
 
 describe('Replace', function() {
+  this.timeout(15000);
   var a = '';
   for (let i = 0; i < 10000; ++i) {
     a += 'This is a simple example demonstrating how to use this module.';
@@ -151,50 +155,52 @@ describe('Replace', function() {
 });
 
 describe('Replace Pattern', function() {
-    var a = '';
-    for(let i = 0; i < 1000000; ++i){
-        a += 'This text.';
-    }
-    var b = '';
-    for(let i = 0; i < 1000000; ++i){
-        b += 'This text.';
-    }
-    var startTime, endTime;
+  this.timeout(15000);
+  var a = '';
+  for(let i = 0; i < 1000000; ++i){
+      a += 'This text.';
+  }
+  var b = '';
+  for(let i = 0; i < 1000000; ++i){
+      b += 'This text.';
+  }
+  var startTime, endTime;
 
-    it('Natively replace text with the same length by using a RegExp pattern', function() {
-        var s = a;
-        startTime = Date.now();
-        s = s.replace(/This/g, 'this');
-        endTime = Date.now();
-        mlog.log(endTime - startTime, 'milliseconds');
-    });
+  it('Natively replace text with the same length by using a RegExp pattern', function() {
+      var s = a;
+      startTime = Date.now();
+      s = s.replace(/This/g, 'this');
+      endTime = Date.now();
+      mlog.log(endTime - startTime, 'milliseconds');
+  });
 
-    it('Use StringBuilder to replace text with the same length by using a pattern', function() {
-        var sb = new StringBuilder(a);
-        startTime = Date.now();
-        sb.replaceAll('This', 'this');
-        endTime = Date.now();
-        mlog.log(endTime - startTime, 'milliseconds');
-    });
+  it('Use StringBuilder to replace text with the same length by using a pattern', function() {
+      var sb = new StringBuilder(a);
+      startTime = Date.now();
+      sb.replaceAll('This', 'this');
+      endTime = Date.now();
+      mlog.log(endTime - startTime, 'milliseconds');
+  });
 
-    it('Natively replace text by using a RegExp pattern', function() {
-        var s = b;
-        startTime = Date.now();
-        s = s.replace(/This/g, 'The');
-        endTime = Date.now();
-        mlog.log(endTime - startTime, 'milliseconds');
-    });
+  it('Natively replace text by using a RegExp pattern', function() {
+      var s = b;
+      startTime = Date.now();
+      s = s.replace(/This/g, 'The');
+      endTime = Date.now();
+      mlog.log(endTime - startTime, 'milliseconds');
+  });
 
-    it('Use StringBuilder to replace text by using a pattern', function() {
-        var sb = new StringBuilder(b);
-        startTime = Date.now();
-        sb.replaceAll('This', 'The');
-        endTime = Date.now();
-        mlog.log(endTime - startTime, 'milliseconds');
-    });
+  it('Use StringBuilder to replace text by using a pattern', function() {
+      var sb = new StringBuilder(b);
+      startTime = Date.now();
+      sb.replaceAll('This', 'The');
+      endTime = Date.now();
+      mlog.log(endTime - startTime, 'milliseconds');
+  });
 });
 
 describe('Equals', function() {
+  this.timeout(15000);
   var a = 'The first string.'
   var b = 'The second string.'
   var c = 'The third string.'
@@ -260,6 +266,7 @@ describe('Equals', function() {
 });
 
 describe('EqualsIgnoreCase', function() {
+  this.timeout(15000);
   var a = 'The first string.'
   var b = 'The second string.'
   var c = 'The third string.'
@@ -326,6 +333,7 @@ describe('EqualsIgnoreCase', function() {
 });
 
 describe('IndexOf', function() {
+  this.timeout(15000);
   var a = '';
   for (let i = 0; i < 1000000; ++i) {
     a += 'COO';
@@ -364,26 +372,27 @@ describe('IndexOf', function() {
 });
 
 describe('Reverse', function() {
-    var a = '';
-    for(let i = 0; i < 100000; ++i){
-        a += 'HERE IS A SIMPLE EXAMPLE, WHICH CONTAINS MULTIPLE EXAMPLES. SIXLEE IS A WRONG WORD. EXAMPLEEXAMPLE';
-    }
-    var p = 'EXAMPLE';
-    var startTime, endTime;
+  this.timeout(15000);
+  var a = '';
+  for(let i = 0; i < 100000; ++i){
+      a += 'HERE IS A SIMPLE EXAMPLE, WHICH CONTAINS MULTIPLE EXAMPLES. SIXLEE IS A WRONG WORD. EXAMPLEEXAMPLE';
+  }
+  var p = 'EXAMPLE';
+  var startTime, endTime;
 
-    it('Natively reverse text', function() {
-        var s = a;
-        startTime = Date.now();
-        var reverse = s.split('').reverse().join('');
-        endTime = Date.now();
-        mlog.log(endTime - startTime, 'milliseconds');
-    });
+  it('Natively reverse text', function() {
+      var s = a;
+      startTime = Date.now();
+      var reverse = s.split('').reverse().join('');
+      endTime = Date.now();
+      mlog.log(endTime - startTime, 'milliseconds');
+  });
 
-    it('Use StringBuilder to reverse text', function() {
-        var sb = new StringBuilder(a);
-        startTime = Date.now();
-        var reverse = sb.reverse();
-        endTime = Date.now();
-        mlog.log(endTime - startTime, 'milliseconds');
-    });
+  it('Use StringBuilder to reverse text', function() {
+      var sb = new StringBuilder(a);
+      startTime = Date.now();
+      var reverse = sb.reverse();
+      endTime = Date.now();
+      mlog.log(endTime - startTime, 'milliseconds');
+  });
 });
