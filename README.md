@@ -3,8 +3,6 @@ StringBuilder for Node.js
 
 An easy and fast in-memory string builder for Node.js.
 
-NOTICE: N-API is a new experimental feature in Node.js 8.
-
 ## Code Example
 
 ```javascript
