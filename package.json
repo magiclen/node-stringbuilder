@@ -1,6 +1,6 @@
 {
   "name": "node-stringbuilder",
-  "version": "2.2.3",
+  "version": "2.2.4",
   "description": "An easy and fast in-memory string builder for Node.js.",
   "main": "index.js",
   "scripts": {

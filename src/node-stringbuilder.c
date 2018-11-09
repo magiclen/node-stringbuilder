@@ -1312,11 +1312,12 @@ napi_value ToBuffer(napi_env env, napi_callback_info info){
         size_t sourceDataSize;
         napi_get_value_string_utf8(env, tempString, NULL, 0, &sourceDataSize);
         ++sourceDataSize;
-        char utf8Data[sourceDataSize];
+        char* utf8Data = (char*)malloc(sizeof(char) * sourceDataSize);
         napi_get_value_string_utf8(env, tempString, utf8Data, sourceDataSize, &sourceDataSize);
         napi_value result;
         char* data;
         napi_create_buffer_copy(env, sourceDataSize, utf8Data, (void**)(&data), &result);
+        free(utf8Data);
         return result;
 }
 
