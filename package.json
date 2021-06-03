@@ -1,11 +1,14 @@
 {
   "name": "node-stringbuilder",
-  "version": "2.2.4",
+  "version": "2.2.5",
   "description": "An easy and fast in-memory string builder for Node.js.",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --reporter spec",
-    "benchmark": "mocha --reporter spec benchmark"
+    "test": "mocha",
+    "benchmark": "mocha benchmark"
+  },
+  "engines": {
+    "node": ">=8.6.0"
   },
   "repository": {
     "type": "git",
@@ -25,16 +28,13 @@
   "bugs": {
     "url": "https://github.com/magiclen/node-stringbuilder/issues"
   },
-  "homepage": "https://github.com/magiclen/node-stringbuilder#readme",
-  "engines": {
-    "node": ">=8.6.0"
-  },
-  "devDependencies": {
-    "chai": "^4.2.0",
-    "mocha": "^5.2.0",
-    "mocha-logger": "^1.0.6"
-  },
+  "homepage": "https://magiclen.org/node-stringbuilder/",
   "dependencies": {
     "bindings": "^1.3.0"
+  },
+  "devDependencies": {
+    "chai": "^4.3.4",
+    "mocha": "^8.4.0",
+    "mocha-logger": "^1.0.7"
   }
 }

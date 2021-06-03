@@ -1,6 +1,8 @@
 StringBuilder for Node.js
 =========
 
+[![CI](https://github.com/magiclen/node-stringbuilder/actions/workflows/ci.yml/badge.svg)](https://github.com/magiclen/node-stringbuilder/actions/workflows/ci.yml)
+
 An easy and fast in-memory string builder for Node.js.
 
 ## Code Example
@@ -32,21 +34,6 @@ console.log(sb.toString()); // be added into any position
 console.log(sb.equalsIgnoreCase('be Added into Any position')); // true
 console.log(sb.toBuffer()); // UTF-8 encoded
 ```
-
-## Installation
-
-Run `npm i` or `npm install` to install.
-
-```bash
-npm install node-stringbuilder
-```
-
-If you want to save this module to package.json, please add `--save` option.
-
-```bash
-npm install node-stringbuilder --save
-```
-
 
 ## Features
 
