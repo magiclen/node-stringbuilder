@@ -8,30 +8,30 @@ An easy and fast in-memory string builder for Node.js.
 ## Code Example
 
 ```javascript
-const StringBuilder = require('node-stringbuilder');
-var sb = new StringBuilder('Hi');
-sb.appendLine(',').append('This is a simple example demonstrating how to use this module.');
+const StringBuilder = require("node-stringbuilder");
+const sb = new StringBuilder("Hi");
+sb.appendLine(",").append("This is a simple example demonstrating how to use this module.");
 console.log(sb.toString()); // Hi,
 // This is a simple example demonstrating how to use this module.
-sb.insert('Text can be added into any position of this builder.');
-sb.replace(53, 118, 'Or replace the existing text.');
+sb.insert("Text can be added into any position of this builder.");
+sb.replace(53, 118, "Or replace the existing text.");
 console.log(sb.toString()); // Text can be added into any position of this builder.HOr replace the existing text.
-sb.deleteCharAt(52).insert(52, ' ');
+sb.deleteCharAt(52).insert(52, " ");
 console.log(sb.toString()); // Text can be added into any position of this builder. Or replace the existing text.
-sb.toLowerCase().replaceAll('text', 'string');
+sb.toLowerCase().replaceAll("text", "string");
 console.log(sb.toString()); // string can be added into any position of this builder. or replace the existing string.
 console.log(sb.clone().reverse().toString()); // .gnirts gnitsixe eht ecalper ro .redliub siht fo noitisop yna otni dedda eb nac gnirts
 console.log(sb.toString(0, 19)); // string can be added
 console.log(sb.length()); // 86
 console.log(sb.count()); // 15
-console.log(sb.indexOf('is')); // Uint32Array [ 43, 72 ]
-console.log(sb.indexOfSkip('is')); // Uint32Array [ 43, 72 ]
-console.log(sb.lastIndexOf('is')); // Uint32Array [ 72, 43 ]
+console.log(sb.indexOf("is")); // Uint32Array [ 43, 72 ]
+console.log(sb.indexOfSkip("is")); // Uint32Array [ 43, 72 ]
+console.log(sb.lastIndexOf("is")); // Uint32Array [ 72, 43 ]
 console.log(sb.indexOfRegExp(/is/g)); // { index: [ 43, 72 ], lastIndex: [ 45, 74 ] }
-console.log(sb.repeat().indexOf('is')); // Uint32Array [ 43, 72, 129, 158 ]
+console.log(sb.repeat().indexOf("is")); // Uint32Array [ 43, 72, 129, 158 ]
 sb.substring(11, 37);
 console.log(sb.toString()); // be added into any position
-console.log(sb.equalsIgnoreCase('be Added into Any position')); // true
+console.log(sb.equalsIgnoreCase("be Added into Any position")); // true
 console.log(sb.toBuffer()); // UTF-8 encoded
 ```
 
@@ -42,7 +42,7 @@ console.log(sb.toBuffer()); // UTF-8 encoded
   * Multiple types of data are allowed to input.
     * Strings
     * Buffers(UTF-8 encoded)
-    * Instances of this StringBuilder module
+    * Instances of this `StringBuilder` module
     * ReadStream(to read file)
     * Numbers, booleans, other objects
   * Fast string search algorithm([Boyer-Moore-MagicLen](https://magiclen.org/boyer-moore-magiclen/))
@@ -58,50 +58,50 @@ Import this module by using `require` function.
 const StringBuilder = require('node-stringbuilder');
 ```
 
-Use `new` operator or `from` function to create a StringBuilder instance.
+Use `new` operator or `from` function to create a `StringBuilder` instance.
 
 ```javascript
-var sb1 = new StringBuilder();
-// or
-var sb2 = StringBuilder.from();
+const sb1 = new StringBuilder();
+// or 
+const sb2 = StringBuilder.from();
 ```
 
-When creating an instance of StringBuilder, you can initialize the text and capacity.
+When creating an instance of `StringBuilder`, you can initialize the text and capacity.
 
 ```javascript
-var sb = StringBuilder.from('First', 4096);
+const sb = StringBuilder.from("First", 4096);
 ```
 
-By default, a block of buffer space used by StringBuilder is 128 characters. The space of the buffer can be expanded or shrinked by blocks.
+By default, a block of buffer space used by `StringBuilder` is 128 characters. The space of the buffer can be expanded or shrinked by blocks.
 
 ```javascript
 // To expand
-var newCapacity = 65536;
+const newCapacity = 65536;
 sb.expandCapacity(newCapacity);
 // To shrink
 sb.shrinkCapacity();
 ```
 
-If some text are added into StringBuilder, StringBuilder will check its space. And if the space is too small, it will re-alloc a bigger one automatically. This re-allocation has overheads, if it does this frequently, your program may be slowed down. Therefore, if you can predict the length of your text, please set the capacity when creating a StringBuilder instance.
+If some text are added into `StringBuilder`, `StringBuilder` will check its space. And if the space is too small, it will re-alloc a bigger one automatically. This re-allocation has overheads, if it does this frequently, your program may be slowed down. Therefore, if you can predict the length of your text, please set the capacity when creating a `StringBuilder` instance.
 
 ### Append
 
 Concat text.
 
 ```javascript
-sb.append('string').append(123).append(false).append(fs.createReadStream(path));
+sb.append("string").append(123).append(false).append(fs.createReadStream(path));
 ```
 
 Add a new line after append.
 
 ```javascript
-sb.appendLine('string');
+sb.appendLine("string");
 ```
 
 Append text repeatedly.
 
 ```javascript
-sb.appendRepeat('string', 3);
+sb.appendRepeat("string", 3);
 ```
 
 Append a file asynchronizely.
@@ -115,8 +115,8 @@ await sb.appendReadStream(fs.createReadStream(path));
 Insert text to any position.
 
 ```javascript
-sb.insert('string'); // To the head.
-sb.insert(5, 'string');
+sb.insert("string"); // To the head.
+sb.insert(5, "string");
 ```
 
 ### Replace
@@ -124,20 +124,25 @@ sb.insert(5, 'string');
 Replace text to the position in a range of index.
 
 ```javascript
-sb.replace(4, 15, 'string');
+sb.replace(4, 15, "string");
 ```
 
 Replace existing substrings to another.
 
 ```javascript
-sb.replacePattern('old', 'new');
-sb.replacePattern('old', 'new', offset, limit);
+sb.replacePattern("old", "new");
+sb.replacePattern(
+    "old",
+    "new",
+    offset,
+    limit
+);
 ```
 
 Replace all existing substrings to another.
 
 ```javascript
-sb.replaceAll('old', 'new');
+sb.replaceAll("old", "new");
 ```
 
 ### Delete
@@ -207,46 +212,46 @@ sb.repeat(1);
 
 ### Expand Capacity
 
-Expand the capacity of this StringBuilder.
+Expand the capacity of this `StringBuilder`.
 
 ```javascript
-sb.expandCapacity(4096).append('string');
+sb.expandCapacity(4096).append("string");
 ```
 
 Expand and get the updated capacity,
 
 ```javascript
-var capacity = sb.expandCapacity(4096, true);
+const capacity = sb.expandCapacity(4096, true);
 ```
 
 ### Shrink Capacity
 
-Shrink the capacity of this StringBuilder.
+Shrink the capacity of this `StringBuilder`.
 
 ```javascript
-sb.shrinkCapacity().clone().append('string');
+sb.shrinkCapacity().clone().append("string");
 ```
 
 Shrink and get the updated capacity,
 
 ```javascript
-var capacity = sb.shrinkCapacity(true);
+const capacity = sb.shrinkCapacity(true);
 ```
 
 ### Get Current Text Length
 
-To get the length of this StringBuilder,
+To get the length of this `StringBuilder`,
 
 ```javascript
-var length = sb.length();
+const length = sb.length();
 ```
 
 ### Get Current Capacity
 
-To get the length of this StringBuilder,
+To get the length of this `StringBuilder`,
 
 ```javascript
-var capacity = sb.capacity();
+const capacity = sb.capacity();
 ```
 
 ### Count the words
@@ -254,7 +259,7 @@ var capacity = sb.capacity();
 To count the words,
 
 ```javascript
-var words = sb.count();
+const words = sb.count();
 ```
 
 ### Build String
@@ -262,26 +267,26 @@ var words = sb.count();
 Build a string of a specific range of index.
 
 ```javascript
-var str = sb.toString(4, 10);
+const str = sb.toString(4, 10);
 ```
 
 Build a UTF-8 buffer of a specific range of index.
 
 ```javascript
-var buffer = sb.toBuffer(4, 10);
+const buffer = sb.toBuffer(4, 10);
 ```
 
 To get the full text,
 
 ```javascript
-var text = sb.toString();
-var buffer = sb.toBuffer();
+const text = sb.toString();
+const buffer = sb.toBuffer();
 ```
 
 To get one character at a specific index,
 
 ```javascript
-var c = sb.charAt(4);
+const c = sb.charAt(4);
 ```
 
 ### Search String
@@ -289,8 +294,8 @@ var c = sb.charAt(4);
 Search substrings from the head,
 
 ```javascript
-var indexArray = sb.indexOf('string');
-var indexArray2 = sb.indexOf('string', offset, limit);
+const indexArray = sb.indexOf("string");
+const indexArray2 = sb.indexOf("string", offset, limit);
 ```
 
 Search substrings from the head by using RegExp,
@@ -302,7 +307,7 @@ var indexArray = sb.indexOf(/string/g);
 Search substrings from the end,
 
 ```javascript
-var indexArray = sb.lastIndexOf('string');
+const indexArray = sb.lastIndexOf("string");
 ```
 
 ### Equals
@@ -310,30 +315,30 @@ var indexArray = sb.lastIndexOf('string');
 Determine whether the two strings are the same.
 
 ```javascript
-var equal = sb.equals('string');
+const equal = sb.equals("string");
 ```
 
 To ignore the case of letters,
 
 ```javascript
-var equal = sb.equalsIgnoreCase('string');
+const equal = sb.equalsIgnoreCase("string");
 ```
 
 Determine whether it starts or ends with a specific pattern.
 
 ```javascript
-var start = sb.startsWith('string');
-var end = sb.endsWith('string');
+const start = sb.startsWith("string");
+const end = sb.endsWith("string");
 ```
 
 RegExp is not supported in `startsWith` and `endsWith` methods.
 
 ### Clone
 
-Clone this StringBuilder.
+Clone this `StringBuilder`.
 
 ```javascript
-var newSB = sb.clone();
+const newSB = sb.clone();
 ```
 
 ## Tests
@@ -425,9 +430,3 @@ According to the result of benchmark, if you just want to append a few different
 ## License
 
 [MIT](LICENSE)
-
-## To Do
-
- * More test cases
-
-If you can help me do this as collaborators, I will be grateful.
